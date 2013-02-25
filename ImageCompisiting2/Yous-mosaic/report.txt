@@ -1,0 +1,127 @@
+CSC320 ASSIGNMENT#3
+
+
+GROUP MEMBERS:
+--------------
+Youssef Aboul-Naja  (Student#: 991489073)
+Hoa Nguyen  (Student#: 991043116)
+
+
+IMPORTANT INFO:
+---------------
+The program name is "TextureMap.java"
+
+To run the program, you need to type on the command prompt:
+(the library colt.jar has to be in the same directory as TextureMap.java)
+
+% javac -classpath .:colt.jar TextureMap.java 
+% java -cp .:colt.jar TextureMap
+
+
+FEATURES THAT WERE IMPLEMENTED:
+-------------------------------
+* Warp Alignment
+* Pixel Blending
+* Anti-Aliasing (done using Bilinear Interpolation)
+* Thumbnails for images that are loaded (Additional GUI component)
+
+
+--------------------------------------------------------------------------------
+                           -------------------
+                          | Question#3 REPORT |
+                           -------------------
+--------------------------------------------------------------------------------
+
+Align Wrap:
+-----------
+
+The way we are handling automatic align warp in question number 3 is as follows:
+
+The user initially selects 4 pixels on the texture image (u1,v1,u2,v2,u3,v3,u4,v4), 
+and 4 pixels on the mosaic image (r1,c1,r2,c2,r3,c3,r4,c4).
+
+From the above 8 points, we create a MatrixSolver that does forward mapping.
+
+Now, the 4 points that were clicked on the texture image create an enclosed region.
+We iteratively go through the points in the enclosed region & on each
+point, we pull its RGB value (we will refer to it as RGB_TEX(u,v) ).
+From there, we apply on the point (u,v) forward mapping to see where it would map 
+if the texture image and mosaic image were stitched together).  
+Assume the point (u,v) gets mapped to (x,y).
+Now, we pull the RGB value of the pixel (x,y) from the mosaic image; we will 
+refer to that as RGB_MOSAIC(x,y).
+
+We keep a global variable called smallestError.
+We also keep a variable called currentError, which equals to:
+
+currentError = summation( (RGB_MOSAIC(x,y) - RGB_TEX(u,v))^2 )
+
+note: we are summing over all the (u,v) points that are enclosed within the region
+that was formed from the 4 clicks of the user.
+
+So now, we have a notion of error.  For each point that the user clicked on the 
+texture image, it has 8 adjacent neighboors. Now, we allow each point to have up
+9 positions (the position it is located at now, and the 8 direct neighboors). So,
+in effect, there are 9*9*9*9 different scenarios of how the pixels could be
+positioned.
+
+We go through each scenario & calculate the resultant ERROR between the texture
+and mosaic image.  If the newly calculated currentError is smaller than any previous 
+ERROR value that was calculated (smaller than smallestError), then this point 
+positioning is the most desirable so far, and we should save this point positioning 
+for later texture/mosaic stitching. We also set smallestError to this currentError.
+
+If the ERROR value is not the smallest ERROR value we encountered, we just disregard
+these point arrangments and we test the next point arrangements.
+
+This method is computationally inefficient, yet it gives very good results.  The way we 
+made this inefficient approach "somewhat" efficient is that as we are calculating 
+the currentError for a given point positions, we constantly check the currentError value 
+[at every addition]. If at any period during the summation the currentError value becomes 
+larger than the variable smallestError, then such point positions is not desirable, and
+we stop the calculation of the currentError variable for this set of point positions. 
+We then move on to the next set of point positions.
+
+
+Pixel Blending:
+---------------
+
+The way we are handling the pixel bleding feature is in question # 3 is as follows:
+
+We first figure out the overlap region when pasting the texture on the current 
+mosaic. As we build the final resulting image, for each location we check whether it is
+in the overlap region. If it is we do the following:
+
+	- We find the distance d1 where d1 is the smallest distance
+	  from the location of the pixel to the edges of the texture (note that
+	  we only consider the edges that are inside the overlap region)
+
+	- We find the distance d2 where d2 is the smallest distance
+	  from the location of the pixel to the edges of the current mosaic (note that
+	  we only consider the edges that are inside the overlap region)  
+	
+	- We the create a new pixel giving it the weight based on this formula:
+		p = [p_t(d1^3) + p_m(d2^3)]/[d1^3 + d2^3]
+	  	
+		where p_t = the intensity of the pixel at this location on the texture 
+		where p_m = the intensity of the pixel at this location on the mosaic
+
+
+The above algorithm was taken from http://moriborg.de/ee/mosaicing/compositing.html
+
+
+FINAL NOTES:
+-----------
+
+Note1:
+We added anti-aliasing only to the mosaic-ing section of the assignment (we didnt
+added to part#1 of the assignment). The reason why we didnt is that we decided that getting 
+color blending working is more important!
+
+Note2:
+The pixel blending works fine on most images we tested.  Unfortunately, there are a set 
+of images we tried that when we blend, the whole blending process is perfect except for
+a small "gray box" that appears from no where.  We tried fixing the problem, but due to 
+the time limit (the assignment is due in 5 min :P ) we could fix it.  We just wanted to 
+bring this point up to the markers attention. 
+
